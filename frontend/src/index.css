@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap');
+
+:root {
+  --bg-color: #0f1115;
+  --panel-bg: #1a1d24;
+  --text-primary: #ffffff;
+  --text-secondary: #8b949e;
+  
+  --color-pass: #2ea043;
+  --color-pass-glow: rgba(46, 160, 67, 0.4);
+  
+  --color-fail: #f85149;
+  --color-fail-glow: rgba(248, 81, 73, 0.4);
+  
+  --color-warning: #d29922;
+  --color-warning-glow: rgba(210, 153, 34, 0.4);
+
+  --color-accent: #58a6ff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+}
