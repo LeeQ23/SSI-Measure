@@ -12,10 +12,11 @@ void setup() {
 
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
 
-  // You will need to calibrate this value. 
-  // It is the value that your specific load cell returns for 1 unit of weight.
-  // For example: scale.set_scale(2280.f); 
-  scale.set_scale(1.f); // Default scale, needs calibration!
+  scale.set_scale(-993.6f);
+
+  
+  // Give the HX711 chip 2 seconds to stabilize before setting the zero point
+  delay(2000); 
   scale.tare(); // Reset the scale to 0
 
   Serial.println("Readings:");
@@ -24,11 +25,11 @@ void setup() {
 void loop() {
   if (scale.is_ready()) {
     // Get moving average of 10 readings for stability
-    long reading = scale.get_units(10);
+    float reading = scale.get_units(10);
     
     // Print in a structured format so Node.js can easily parse it
     Serial.print("WEIGHT:");
-    Serial.println(reading);
+    Serial.println(reading, 1);
   } else {
     Serial.println("HX711 not found.");
   }
