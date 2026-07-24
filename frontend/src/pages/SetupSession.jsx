@@ -14,6 +14,8 @@ function SetupSession() {
     product_id: '',
     criteria: ''
   });
+  const [minWeight, setMinWeight] = useState('');
+  const [maxWeight, setMaxWeight] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -23,12 +25,19 @@ function SetupSession() {
   const handleStart = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
+    let finalCriteria = formData.criteria;
+    if (inspectionType === 'weight') {
+      finalCriteria = `${minWeight} - ${maxWeight} g`;
+    }
+
     try {
       const response = await fetch(`${API_URL}/sessions/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          criteria: finalCriteria,
           inspection_type: inspectionType
         })
       });
@@ -39,7 +48,12 @@ function SetupSession() {
           state: { 
             sessionId: data.sessionId,
             inspectionType,
-            setupData: formData
+            setupData: { 
+              ...formData, 
+              criteria: finalCriteria,
+              minWeight: parseFloat(minWeight),
+              maxWeight: parseFloat(maxWeight)
+            }
           }
         });
       }
@@ -67,10 +81,23 @@ function SetupSession() {
           <label>Product ID</label>
           <input required name="product_id" value={formData.product_id} onChange={handleChange} />
         </div>
-        <div className="form-group">
-          <label>Criteria ({inspectionType === 'weight' ? 'e.g., 500g +- 20g' : 'e.g., > 5mm'})</label>
-          <input required name="criteria" value={formData.criteria} onChange={handleChange} />
-        </div>
+        {inspectionType === 'weight' ? (
+          <div className="form-group" style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ flex: 1 }}>
+              <label>Min Weight (g)</label>
+              <input required type="number" step="0.1" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label>Max Weight (g)</label>
+              <input required type="number" step="0.1" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} />
+            </div>
+          </div>
+        ) : (
+          <div className="form-group">
+            <label>Criteria (e.g., {'>'} 5mm)</label>
+            <input required name="criteria" value={formData.criteria} onChange={handleChange} />
+          </div>
+        )}
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={() => navigate('/')}>Cancel</button>
           <button type="submit" className="btn-primary" disabled={loading}>Start Inspection</button>

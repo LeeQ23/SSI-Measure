@@ -183,9 +183,9 @@ app.post('/api/sessions/finish', async (req, res) => {
         const [rows] = await pool.execute(`SELECT * FROM inspection_sessions WHERE id = ?`, [session_id]);
         const sessionData = rows[0];
 
-        // Attempt to forward to 192.168.1.200:3000
+        // Attempt to forward to SSI Smart Manufacturing Backend
         try {
-            await axios.post('http://192.168.1.200:3000/api/inspections', sessionData);
+            await axios.post('http://localhost:5003/api/inspections', sessionData);
             console.log('Successfully forwarded data to external server.');
         } catch (forwardErr) {
             console.error('Failed to forward data to external server:', forwardErr.message);
