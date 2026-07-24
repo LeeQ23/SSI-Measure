@@ -132,7 +132,7 @@ function ActiveInspection() {
 
   const handleLog = async (status) => {
     // Determine the measured value based on type
-    const measuredValue = inspectionType === 'weight' ? `${finalWeight.toFixed(2)}g` : dimensionState;
+    const measuredValue = inspectionType === 'weight' ? `${finalWeight.toFixed(3)}g` : dimensionState;
     
     try {
         await fetch(`${SOCKET_SERVER_URL}/api/sessions/log`, {
@@ -178,26 +178,18 @@ function ActiveInspection() {
         {inspectionType === 'weight' ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <div className="massive-display weight minimalist">
-                    {finalWeight.toFixed(2)}<span className="unit">g</span>
+                    {finalWeight.toFixed(3)}<span className="unit">g</span>
                 </div>
                 
                 {currentStatus !== 'WAITING' && (
-                    <div style={{ 
-                        fontSize: '5rem', 
-                        fontWeight: 'bold', 
-                        color: '#ffffff', 
-                        marginTop: '0', 
-                        marginBottom: '1rem',
-                        letterSpacing: '4px',
-                        textShadow: '0 5px 15px rgba(0,0,0,0.3)'
-                    }}>
+                    <div className="status-big-text">
                         {currentStatus}
                     </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                    <button className="btn-secondary" style={{ padding: '0.75rem 2.5rem', fontSize: '1.2rem', borderRadius: '1rem' }} onClick={() => setTareOffset(calibWeight)}>Reset to 0</button>
-                    <button className="btn-secondary" style={{ padding: '0.75rem 2.5rem', fontSize: '1.2rem', borderRadius: '1rem', background: showCalibration ? '#3b82f6' : 'rgba(255,255,255,0.1)' }} onClick={() => setShowCalibration(!showCalibration)}>Calibrate</button>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem' }}>
+                    <button className="btn-secondary" style={{ padding: '0.5rem 1.5rem', fontSize: '1rem', borderRadius: '0.75rem' }} onClick={() => setTareOffset(calibWeight)}>Reset to 0</button>
+                    <button className="btn-secondary" style={{ padding: '0.5rem 1.5rem', fontSize: '1rem', borderRadius: '0.75rem', background: showCalibration ? '#3b82f6' : 'rgba(255,255,255,0.1)' }} onClick={() => setShowCalibration(!showCalibration)}>Calibrate</button>
                 </div>
 
                 {showCalibration && (
@@ -223,7 +215,7 @@ function ActiveInspection() {
                             )}
                         </div>
                         <div style={{ color: '#888', fontSize: '0.85rem', textAlign: 'center', marginTop: '0.5rem' }}>
-                            Current Calibration &mdash; Slope: <span style={{color: '#fff'}}>{calibParams.slope.toFixed(4)}</span> | Offset: <span style={{color: '#fff'}}>{calibParams.offset.toFixed(2)}</span>
+                            Current Calibration &mdash; Slope: <span style={{color: '#fff'}}>{calibParams.slope.toFixed(4)}</span> | Offset: <span style={{color: '#fff'}}>{calibParams.offset.toFixed(3)}</span>
                         </div>
                     </div>
                 )}
@@ -234,7 +226,7 @@ function ActiveInspection() {
                         Min
                         <input 
                             type="number" 
-                            step="0.1" 
+                            step="0.001" 
                             value={currentMin} 
                             onChange={(e) => setCurrentMin(parseFloat(e.target.value) || 0)}
                             style={{ width: '90px' }}
@@ -247,7 +239,7 @@ function ActiveInspection() {
                         Max
                         <input 
                             type="number" 
-                            step="0.1" 
+                            step="0.001" 
                             value={currentMax} 
                             onChange={(e) => setCurrentMax(parseFloat(e.target.value) || 0)}
                             style={{ width: '90px' }}

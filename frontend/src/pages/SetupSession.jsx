@@ -85,11 +85,11 @@ function SetupSession() {
           <div className="form-group" style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1 }}>
               <label>Min Weight (g)</label>
-              <input required type="number" step="0.1" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} />
+              <input required type="number" step="0.001" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} />
             </div>
             <div style={{ flex: 1 }}>
               <label>Max Weight (g)</label>
-              <input required type="number" step="0.1" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} />
+              <input required type="number" step="0.001" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} />
             </div>
           </div>
         ) : (
