@@ -9,59 +9,24 @@ Selamat datang! Panduan ini disusun menggunakan bahasa yang sangat sederhana aga
 Sebelum mulai, mari kita kenali beberapa istilah dengan analogi sehari-hari:
 
 1. **Aplikasi Desktop (SSI Measure)**: Layar utama tempat operator bekerja, melihat hasil timbangan, dan memasukkan data (seperti program di komputer pada umumnya).
-2. **Node.js**: "Mesin Penggerak" di dalam komputer agar aplikasi ini bisa berjalan.
-3. **XAMPP (MySQL)**: "Buku Catatan Digital" tempat menyimpan data hasil penimbangan atau pengukuran secara otomatis.
-4. **Port/Koneksi Alat**: Jalur kabel tempat alat (sensor/ESP32) terhubung dengan komputer.
+2. **Database (Penyimpanan Internal)**: "Buku Catatan Digital" otomatis yang sudah tersembunyi di dalam aplikasi ini untuk menyimpan data hasil penimbangan atau pengukuran.
+3. **Port/Koneksi Alat**: Jalur kabel tempat alat (sensor/ESP32) terhubung dengan komputer.
 
 ---
 
-## 🔌 BAGIAN 1: Mengunduh Program Pendukung (Wajib)
+## 🔌 BAGIAN 1: Cara Memasang (Install) Aplikasi
 
-Agar SSI Measure bisa berjalan lancar, komputer memerlukan 2 program pendukung sederhana:
+Kabar baik! SSI Measure versi terbaru ini sudah dibuat menjadi **Satu Paket Otomatis (`setup.exe`)** lengkap dengan databasenya sendiri. Anda **TIDAK PERLU** lagi menginstal Node.js, XAMPP, atau pengaturan teknis lainnya.
 
-### 1. Install Node.js (Mesin Penggerak Program)
-1. Buka browser (Google Chrome/Edge) dan ketik alamat: **[nodejs.org](https://nodejs.org)**
-2. Klik tombol hijau yang bertuliskan **LTS (Recommended For Most Users)**.
-3. Setelah terdownload, buka file tersebut (misal `node-v...-x64.msi`).
-4. Klik **Next** terus-menerus sampai selesai, lalu klik **Finish**.
-
-### 2. Install XAMPP (Buku Catatan Digital / Database)
-1. Buka browser dan ketik alamat: **[apachefriends.org](https://www.apachefriends.org)**
-2. Download **XAMPP for Windows**.
-3. Buka file installer yang sudah didownload, klik **Next** sampai selesai, lalu klik **Finish**.
+### Langkah-langkah Instalasi:
+1. Temukan file installer aplikasi yang bernama **`SSI Measure Setup.exe`** (berada di folder `dist`).
+2. Klik dua kali (Double-click) pada file tersebut.
+3. Tunggu beberapa detik, proses instalasi akan berjalan secara otomatis (layaknya menginstal aplikasi profesional pada umumnya).
+4. Setelah selesai, aplikasi SSI Measure akan otomatis terbuka! Anda juga bisa membukanya kapan saja melalui ikon aplikasi (Shortcut) yang muncul di Desktop atau Start Menu komputer Anda.
 
 ---
 
-## 🗄️ BAGIAN 2: Menyiapkan Tempat Penyimpanan Data (Database)
-
-Tahap ini hanya perlu dilakukan sekali saat pemasangan awal:
-
-1. Buka aplikasi **XAMPP Control Panel** dari menu Start Windows Anda.
-2. Di baris **Apache** dan **MySQL**, klik tombol **Start** pada keduanya hingga warna indikator berubah menjadi hijau.
-3. Buka browser Chrome, lalu ketik alamat ini di bagian atas: `http://localhost/phpmyadmin`
-4. Di sebelah kiri, klik menu **New** (Baru).
-5. Pada kotak *Database name*, ketik persis: `ssi_measure`
-6. Klik tombol **Create** (Buat).
-7. Klik database `ssi_measure` yang baru dibuat di menu sebelah kiri.
-8. Klik tab **Import** di bagian atas layar.
-9. Klik tombol **Choose File** (Pilih File), lalu cari file bernama `schema.sql` yang berada di dalam folder proyek Anda di lokasi: `SSI Measure\backend\schema.sql`.
-10. Scroll ke bawah dan klik tombol **Import** / **Go**. Data tabel berhasil dibuat!
-
----
-
-## 🚀 BAGIAN 3: Membuka Aplikasi SSI Measure
-
-Kabar baik! Sekarang SSI Measure sudah berupa Aplikasi Desktop, jadi Anda tidak perlu membuka terminal atau mengetik kode rumit.
-
-1. Pastikan **XAMPP Control Panel** sudah menyala (Apache dan MySQL warna hijau).
-2. Buka folder **SSI Measure** tempat Anda menyimpan semua file program ini.
-3. Cari file bernama **`Buka-SSI-Measure.vbs`** (atau `SSI-Measure.bat`).
-4. **Klik dua kali (Double-click)** file tersebut.
-5. Tunggu beberapa detik, layar aplikasi SSI Measure akan langsung terbuka di depan Anda!
-
----
-
-## 📋 BAGIAN 4: Cara Mengoperasikan Aplikasi SSI Measure
+## 📋 BAGIAN 2: Cara Mengoperasikan Aplikasi SSI Measure
 
 Setelah aplikasi terbuka, berikut adalah cara menggunakannya:
 
@@ -88,16 +53,14 @@ Setelah aplikasi terbuka, berikut adalah cara menggunakannya:
 ### 4. Menyelesaikan Sesi Inspeksi
 1. Jika semua barang sudah selesai diukur, klik tombol **Finish Session** (Selesai Sesi).
 2. Ringkasan hasil inspeksi akan ditampilkan (Total Barang OK, Total Barang NG).
-3. Data secara otomatis sudah tersimpan aman di dalam buku catatan digital Anda (Database MySQL).
+3. Data secara otomatis sudah tersimpan aman di dalam penyimpanan internal komputer Anda.
 
 ---
 
 ## ❓ Solusi Masalah Umum (Troubleshooting)
 
-- **Masalah**: Aplikasi ditekan klik dua kali tapi tidak terbuka.
-  - **Solusi**: Pastikan Anda sudah menginstal Node.js. Coba restart komputer Anda, lalu klik dua kali lagi file `Buka-SSI-Measure.vbs` atau `SSI-Measure.bat`.
-- **Masalah**: Data tidak tersimpan / Muncul tulisan Error Database di aplikasi.
-  - **Solusi**: Pastikan Anda sudah menekan tombol **Start** pada aplikasi XAMPP (Apache dan MySQL) sebelum membuka aplikasi SSI Measure.
+- **Masalah**: Aplikasi tidak terbuka setelah di-klik.
+  - **Solusi**: Coba klik kanan ikon aplikasi di Desktop, lalu pilih "Run as administrator".
 - **Masalah**: Angka timbangan diam saja / tidak bergerak.
   - **Solusi**: Pastikan kabel USB alat terhubung dengan kencang ke laptop/komputer. Pastikan juga Anda memilih **Port** (COM) yang benar di pengaturan bagian atas aplikasi.
 

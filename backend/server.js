@@ -5,7 +5,7 @@ const fs = require('fs');
 const { Server } = require('socket.io');
 const { SerialPort, ReadlineParser } = require('serialport');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
+const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
 
 const app = express();
@@ -26,34 +26,71 @@ if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 }
 
-// In-memory session store fallback if MySQL is offline
-const memorySessions = new Map();
-const memoryLogs = [];
-let memorySessionIdCounter = 1;
-let isMySqlConnected = false;
-
-// Database connection
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '', // default XAMPP password
-  database: 'ssi_measure',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+// Database connection & Initialization
+const appDataPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + "/.local/share");
+const dbDir = path.join(appDataPath, 'SSI-Measure');
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+const dbPath = path.join(dbDir, 'database.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) console.error('ERROR: Could not connect to SQLite database', err);
+  else {
+    console.log(`SUCCESS: SQLite Database connected at ${dbPath}`);
+    initializeDatabase();
+  }
 });
 
-// Test MySQL connection on startup
-pool.getConnection()
-  .then((conn) => {
-    isMySqlConnected = true;
-    console.log('SUCCESS: MySQL Database connected.');
-    conn.release();
-  })
-  .catch((err) => {
-    isMySqlConnected = false;
-    console.warn(`WARNING: MySQL connection failed (${err.message}). Using local in-memory session store.`);
+function dbRun(query, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(query, params, function(err) {
+      if (err) reject(err);
+      else resolve(this); // this.lastID, this.changes
+    });
   });
+}
+
+function dbAll(query, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(query, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+async function initializeDatabase() {
+  try {
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS inspection_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        operator_name VARCHAR(100),
+        operator_nim VARCHAR(50),
+        product_id VARCHAR(50),
+        inspection_type VARCHAR(50),
+        criteria VARCHAR(100),
+        start_time DATETIME,
+        end_time DATETIME,
+        total_ok INT DEFAULT 0,
+        total_ng INT DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'active'
+      )
+    `);
+    
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS inspection_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INT,
+        timestamp DATETIME,
+        status VARCHAR(10),
+        measured_value DECIMAL(10, 3),
+        FOREIGN KEY (session_id) REFERENCES inspection_sessions(id)
+      )
+    `);
+  } catch (err) {
+    console.error('Failed to initialize SQLite database tables:', err);
+  }
+}
 
 let activePort = null;
 let mockInterval = null;
@@ -151,7 +188,8 @@ app.post('/api/port', (req, res) => {
 });
 
 app.get('/api/status', (req, res) => {
-    res.json({ currentPortPath, isMySqlConnected });
+    // Return true for isMySqlConnected to satisfy frontend legacy logic (SQLite is always on)
+    res.json({ currentPortPath, isMySqlConnected: true });
 });
 
 // --- SESSION API ---
@@ -159,111 +197,64 @@ app.get('/api/status', (req, res) => {
 // Start Session
 app.post('/api/sessions/start', async (req, res) => {
     const { operator_name, operator_nim, product_id, inspection_type, criteria } = req.body;
-    
-    if (isMySqlConnected) {
-      try {
-          const [result] = await pool.execute(
-              `INSERT INTO inspection_sessions 
-              (operator_name, operator_nim, product_id, inspection_type, criteria, start_time) 
-              VALUES (?, ?, ?, ?, ?, NOW())`,
-              [operator_name, operator_nim, product_id, inspection_type, criteria]
-          );
-          return res.json({ sessionId: result.insertId });
-      } catch (err) {
-          console.error('MySQL Insert Error, falling back to memory:', err.message);
-      }
+    try {
+        const result = await dbRun(
+            `INSERT INTO inspection_sessions 
+            (operator_name, operator_nim, product_id, inspection_type, criteria, start_time) 
+            VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))`,
+            [operator_name, operator_nim, product_id, inspection_type, criteria]
+        );
+        res.json({ sessionId: result.lastID });
+    } catch (err) {
+        console.error('SQLite Insert Error:', err.message);
+        res.status(500).json({ error: err.message });
     }
-
-    // In-memory Fallback
-    const sessionId = memorySessionIdCounter++;
-    memorySessions.set(sessionId, {
-      id: sessionId,
-      operator_name,
-      operator_nim,
-      product_id,
-      inspection_type,
-      criteria,
-      start_time: new Date().toISOString(),
-      end_time: null,
-      total_ok: 0,
-      total_ng: 0,
-      status: 'active'
-    });
-    res.json({ sessionId, note: 'Saved in local session memory' });
 });
 
 // Log item
 app.post('/api/sessions/log', async (req, res) => {
     const { session_id, status, measured_value } = req.body;
-
-    if (isMySqlConnected) {
-      try {
-          await pool.execute(
-              `INSERT INTO inspection_logs (session_id, timestamp, status, measured_value) 
-              VALUES (?, NOW(), ?, ?)`,
-              [session_id, status, measured_value || null]
-          );
-          const col = status === 'OK' ? 'total_ok' : 'total_ng';
-          await pool.execute(`UPDATE inspection_sessions SET ${col} = ${col} + 1 WHERE id = ?`, [session_id]);
-          return res.json({ success: true });
-      } catch (err) {
-          console.error('MySQL Log Error, falling back to memory:', err.message);
-      }
+    try {
+        await dbRun(
+            `INSERT INTO inspection_logs (session_id, timestamp, status, measured_value) 
+            VALUES (?, datetime('now', 'localtime'), ?, ?)`,
+            [session_id, status, measured_value || null]
+        );
+        const col = status === 'OK' ? 'total_ok' : 'total_ng';
+        await dbRun(`UPDATE inspection_sessions SET ${col} = ${col} + 1 WHERE id = ?`, [session_id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('SQLite Log Error:', err.message);
+        res.status(500).json({ error: err.message });
     }
-
-    // In-memory Fallback
-    memoryLogs.push({ session_id, timestamp: new Date().toISOString(), status, measured_value });
-    const sess = memorySessions.get(Number(session_id));
-    if (sess) {
-      if (status === 'OK') sess.total_ok += 1;
-      else sess.total_ng += 1;
-    }
-    res.json({ success: true, note: 'Logged in memory' });
 });
 
 // Finish Session
 app.post('/api/sessions/finish', async (req, res) => {
     const { session_id, final_total_ok, final_total_ng } = req.body;
+    try {
+        await dbRun(
+            `UPDATE inspection_sessions 
+             SET end_time = datetime('now', 'localtime'), status = 'completed', total_ok = ?, total_ng = ? 
+             WHERE id = ?`,
+            [final_total_ok, final_total_ng, session_id]
+        );
 
-    if (isMySqlConnected) {
-      try {
-          await pool.execute(
-              `UPDATE inspection_sessions 
-               SET end_time = NOW(), status = 'completed', total_ok = ?, total_ng = ? 
-               WHERE id = ?`,
-              [final_total_ok, final_total_ng, session_id]
-          );
+        const rows = await dbAll(`SELECT * FROM inspection_sessions WHERE id = ?`, [session_id]);
+        const sessionData = rows[0];
 
-          const [rows] = await pool.execute(`SELECT * FROM inspection_sessions WHERE id = ?`, [session_id]);
-          const sessionData = rows[0];
+        try {
+            await axios.post('http://localhost:5003/api/inspections', sessionData);
+            console.log('Successfully forwarded data to external server.');
+        } catch (forwardErr) {
+            console.warn('Data forwarding disabled or unreachable.');
+        }
 
-          try {
-              await axios.post('http://localhost:5003/api/inspections', sessionData);
-              console.log('Successfully forwarded data to external server.');
-          } catch (forwardErr) {
-              console.error('Failed to forward data to external server:', forwardErr.message);
-          }
-
-          return res.json({ success: true, session: sessionData });
-      } catch (err) {
-          console.error('MySQL Finish Error, falling back to memory:', err.message);
-      }
+        res.json({ success: true, session: sessionData });
+    } catch (err) {
+        console.error('SQLite Finish Error:', err.message);
+        res.status(500).json({ error: err.message });
     }
-
-    // In-memory Fallback
-    const sess = memorySessions.get(Number(session_id)) || {
-      id: session_id,
-      total_ok: final_total_ok,
-      total_ng: final_total_ng,
-      end_time: new Date().toISOString(),
-      status: 'completed'
-    };
-    sess.end_time = new Date().toISOString();
-    sess.status = 'completed';
-    sess.total_ok = final_total_ok;
-    sess.total_ng = final_total_ng;
-
-    res.json({ success: true, session: sess });
 });
 
 io.on('connection', (socket) => {
@@ -293,4 +284,3 @@ server.on('error', (err) => {
 server.listen(PORT, () => {
   console.log(`Backend Server listening on http://localhost:${PORT}`);
 });
-

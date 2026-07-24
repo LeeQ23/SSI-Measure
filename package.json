@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "build:frontend": "npm --prefix frontend run build",
-    "app": "npm run build:frontend && electron ."
+    "app": "npm run build:frontend && electron .",
+    "build:exe": "npm run build:frontend && electron-builder --win"
   },
   "build": {
     "appId": "com.ssimeasure.app",
@@ -24,11 +25,12 @@
     "axios": "^1.16.1",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "mysql2": "^3.22.4",
     "serialport": "^12.0.0",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+    "sqlite3": "^6.0.1"
   },
   "devDependencies": {
-    "electron": "^34.0.0"
+    "electron": "^34.0.0",
+    "electron-builder": "^26.15.3"
   }
 }
